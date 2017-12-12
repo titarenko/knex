@@ -45,12 +45,12 @@ function Client(config = {}) {
     throw new Error(`knex: Required configuration option 'client' is missing.`)
   }
 
-  this.connectionSettings = cloneDeep(config.connection || {})
-  if (this.driverName && config.connection) {
+  this.connectionSettings = cloneDeep(config.connections && config.connections[0] || {})
+  if (this.driverName && config.connections) {
     this.initializeDriver()
     if (!config.pool || (config.pool && config.pool.max !== 0)) {
       this.__cid = clientId()
-      this.initializePool(config)
+      this.initializePools(config)
     }
   }
   this.valueForUndefined = this.raw('DEFAULT');
@@ -193,7 +193,7 @@ assign(Client.prototype, {
     return {min: 2, max: 10, testOnBorrow: true, Promise}
   },
 
-  getPoolSettings(poolConfig) {
+  getPoolSettings(poolConfig, connectionConfig) {
     poolConfig = defaults({}, poolConfig, this.poolDefaults());
     const timeoutValidator = (config, path) => {
       let timeout = get(config, path)
@@ -218,7 +218,7 @@ assign(Client.prototype, {
       config: poolConfig,
       factory: {
         create: () => {
-          return this.acquireRawConnection()
+          return this.acquireRawConnection(connectionConfig)
             .tap(function(connection) {
               connection.__knexUid = uniqueId('__knexUid')
               if (poolConfig.afterCreate) {
@@ -269,28 +269,43 @@ assign(Client.prototype, {
     }
   },
 
-  initializePool(config) {
-    if (this.pool) {
+  initializePools(config) {
+    if (this.pools) {
       helpers.warn('The pool has already been initialized')
       return
     }
 
-    const poolSettings = this.getPoolSettings(config.pool);
-
-    this.pool = genericPool.createPool(poolSettings.factory, poolSettings.config)
+    const client = this;
+    this.pools = config.connections.map(function (connectionConfig) {
+      const poolSettings = client.getPoolSettings(config.pool, connectionConfig);
+      return genericPool.createPool(poolSettings.factory, poolSettings.config)
+    })
   },
 
   validateConnection(connection) {
     return Promise.resolve(true);
   },
 
+  getPool(method) {
+    if (method === 'select') {
+      if (++this.lastPoolIndex >= this.pools.length) {
+        this.lastPoolIndex = 0
+      }
+      return this.pools[this.lastPoolIndex]
+    } else {
+      return this.pools[0]
+    }
+  },
+
   // Acquire a connection from the pool.
-  acquireConnection() {
-    if (!this.pool) {
+  acquireConnection(method) {
+    const pool = this.getPool(method)
+    if (!pool) {
       return Promise.reject(new Error('Unable to acquire a connection'))
     }
-    return this.pool.acquire()
+    return pool.acquire()
       .tap(connection => {
+        connection.pool = pool
         debug('acquired connection from pool: %s', connection.__knexUid)
       })
       .catch(genericPoolErrors.TimeoutError, () => {
@@ -301,28 +316,28 @@ assign(Client.prototype, {
       });
   },
 
+
   // Releases a connection back to the connection pool,
   // returning a promise resolved when the connection is released.
   releaseConnection(connection) {
     debug('releasing connection to pool: %s', connection.__knexUid)
-    return this.pool.release(connection).catch(() => {
+    const pool = connection.pool
+    connection.pool = null
+    return pool.release(connection).catch(() => {
       debug('pool refused connection: %s', connection.__knexUid)
     })
   },
 
   // Destroy the current connection pool for the client.
   destroy(callback) {
-    return Promise.resolve(
-      this.pool &&
-      this.pool.drain()
-        .then(() => this.pool.clear())
-        .then(() => {
-          this.pool = void 0
-          if(typeof callback === 'function') {
-            callback();
-          }
-        })
-    );
+    return this.pools && Promise.mapSeries(this.pools, function (pool) {
+      return pool.drain().then(() => pool.clear())
+    }).then(() => {
+      this.pools = void 0
+      if(typeof callback === 'function') {
+        callback();
+      }
+    });
   },
 
   // Return the database being used by this client.

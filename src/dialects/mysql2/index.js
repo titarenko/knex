@@ -38,8 +38,8 @@ assign(Client_MySQL2.prototype, {
 
   // Get a raw connection, called by the `pool` whenever a new
   // connection needs to be added to the pool.
-  acquireRawConnection() {
-    const connection = this.driver.createConnection(this.connectionSettings)
+  acquireRawConnection(connectionSettings) {
+    const connection = this.driver.createConnection(connectionSettings)
     connection.on('error', err => {
       connection.__knex__disposed = err
     })

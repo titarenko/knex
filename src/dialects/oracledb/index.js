@@ -75,29 +75,29 @@ Client_Oracledb.prototype.prepBindings = function(bindings) {
 
 // Get a raw connection, called by the `pool` whenever a new
 // connection needs to be added to the pool.
-Client_Oracledb.prototype.acquireRawConnection = function() {
+Client_Oracledb.prototype.acquireRawConnection = function(connectionSettings) {
   const client = this;
   const asyncConnection = new Promise(function(resolver, rejecter) {
 
     // If external authentication dont have to worry about username/password and
     // if not need to set the username and password
-    const oracleDbConfig = client.connectionSettings.externalAuth ?
-      { externalAuth : client.connectionSettings.externalAuth } :
+    const oracleDbConfig = connectionSettings.externalAuth ?
+      { externalAuth : connectionSettings.externalAuth } :
       {
-        user : client.connectionSettings.user,
-        password : client.connectionSettings.password
+        user : connectionSettings.user,
+        password : connectionSettings.password
       }
 
     // In the case of external authentication connection string will be given
-    oracleDbConfig.connectString =  client.connectionSettings.connectString ||
-        (client.connectionSettings.host + '/' + client.connectionSettings.database);
+    oracleDbConfig.connectString =  connectionSettings.connectString ||
+        (connectionSettings.host + '/' + connectionSettings.database);
 
-    if (client.connectionSettings.prefetchRowCount) {
-      oracleDbConfig.prefetchRows = client.connectionSettings.prefetchRowCount
+    if (connectionSettings.prefetchRowCount) {
+      oracleDbConfig.prefetchRows = connectionSettings.prefetchRowCount
     }
 
-    if (!_.isUndefined(client.connectionSettings.stmtCacheSize)) {
-      oracleDbConfig.stmtCacheSize = client.connectionSettings.stmtCacheSize;
+    if (!_.isUndefined(connectionSettings.stmtCacheSize)) {
+      oracleDbConfig.stmtCacheSize = connectionSettings.stmtCacheSize;
     }
 
     client.driver.fetchAsString = client.fetchAsString;

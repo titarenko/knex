@@ -82,13 +82,13 @@ assign(Client_Oracle.prototype, {
 
   // Get a raw connection, called by the `pool` whenever a new
   // connection needs to be added to the pool.
-  acquireRawConnection() {
+  acquireRawConnection(connectionSettings) {
     return new Promise((resolver, rejecter) => {
-      this.driver.connect(this.connectionSettings, (err, connection) => {
+      this.driver.connect(connectionSettings, (err, connection) => {
         if (err) return rejecter(err)
         Promise.promisifyAll(connection)
-        if (this.connectionSettings.prefetchRowCount) {
-          connection.setPrefetchRowCount(this.connectionSettings.prefetchRowCount)
+        if (connectionSettings.prefetchRowCount) {
+          connection.setPrefetchRowCount(connectionSettings.prefetchRowCount)
         }
         resolver(connection)
       })

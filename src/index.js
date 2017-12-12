@@ -19,7 +19,11 @@ const aliases = {
 
 export default function Knex(config) {
   if (typeof config === 'string') {
-    return new Knex(assign(parseConnection(config), arguments[2]))
+    const parsed = parseConnection(config)
+    return new Knex(assign({
+      client: parsed.client,
+      connections: [parsed.connection]
+    }, arguments[2]))
   }
   let Dialect;
   if (arguments.length === 0 || (!config.client && !config.dialect)) {
@@ -30,9 +34,19 @@ export default function Knex(config) {
     const clientName = config.client || config.dialect
     Dialect = require(`./dialects/${aliases[clientName] || clientName}/index.js`)
   }
-  if (typeof config.connection === 'string') {
-    config = assign({}, config, {connection: parseConnection(config.connection).connection})
+  if (config.connection) {
+    config.connections = [config.connection]
+    config.connection = undefined
   }
+  if (typeof config.connections === 'string') {
+    config.connections = config.connections.split(/\s/)
+  }
+  if (Array.isArray(config.connections) && typeof config.connections[0] === 'string') {
+    config.connections = config.connections.map(function (it) {
+      return parseConnection(it).connection;
+    });
+  }
+
   return makeKnex(new Dialect(config))
 }
 

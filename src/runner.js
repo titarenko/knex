@@ -24,12 +24,12 @@ assign(Runner.prototype, {
   // a single connection.
   run() {
     const runner = this
-    return Promise.using(this.ensureConnection(), function(connection) {
+    const sql = runner.builder.toSQL();
+    return Promise.using(this.ensureConnection(sql.method), function(connection) {
       runner.connection = connection;
 
       runner.client.emit('start', runner.builder)
       runner.builder.emit('start', runner.builder)
-      const sql = runner.builder.toSQL();
 
       if (runner.builder._debug) {
         helpers.debugLog(sql)
@@ -196,11 +196,11 @@ assign(Runner.prototype, {
   },
 
   // Check whether there's a transaction flag, and that it has a connection.
-  ensureConnection() {
+  ensureConnection(method) {
     if(this.connection) {
       return Promise.resolve(this.connection)
     }
-    return this.client.acquireConnection()
+    return this.client.acquireConnection(method)
       .catch(Promise.TimeoutError, error => {
         if (this.builder) {
           error.sql = this.builder.sql;

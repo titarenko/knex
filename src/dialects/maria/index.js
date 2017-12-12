@@ -30,10 +30,10 @@ assign(Client_MariaSQL.prototype, {
 
   // Get a raw connection, called by the `pool` whenever a new
   // connection needs to be added to the pool.
-  acquireRawConnection() {
+  acquireRawConnection(connectionSettings) {
     return new Promise((resolver, rejecter) => {
       const connection = new this.driver();
-      connection.connect(assign({metadata: true}, this.connectionSettings))
+      connection.connect(assign({metadata: true}, connectionSettings))
       connection
         .on('ready', function() {
           connection.removeAllListeners('error');
