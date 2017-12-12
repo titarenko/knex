@@ -33,6 +33,10 @@ By default, Knex runs tests against MySQL (using [mysql](https://github.com/feli
 
 No setup is required for SQLite.
 
+If you do not have DB servers running on your machine, you can use `npm run pre_integration_test` to setup `postgres` and `mysql` automatically.
+
+Also, if `npm t` fails often due to test timeouts, you can try `KNEX_TEST_TIMEOUT=0 npm t`.
+
 ### Specifying Databases
 You can optionally specify which dialects to test using the `DB` environment variable. Values should be space separated and can include:
 * mysql
