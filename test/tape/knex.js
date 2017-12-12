@@ -9,12 +9,12 @@ test('it should parse the connection string', function(t) {
     client: 'mysql',
     connection: "mysql://user:password@localhost/dbname"
   })
-  t.deepEqual(knexObj.client.config.connection, {
+  t.deepEqual(knexObj.client.config.connections, [{
     database: 'dbname',
     host: 'localhost',
     password: 'password',
     user: 'user'
-  })
+  }])
   knexObj.destroy()
 })
 
@@ -33,12 +33,12 @@ test('it should allow to use proprietary dialect', function(t) {
   t.ok(knexObj.client instanceof Client)
   t.deepEqual(knexObj.client.config, {
     client: Client,
-    connection: {
+    connections: [{
       database: 'dbname',
       host: 'localhost',
       password: 'password',
       user: 'user'
-    }
+    }]
   })
   knexObj.destroy()
 })
@@ -47,21 +47,21 @@ test('it should use knex supported dialect', function(t) {
   t.plan(1)
   var knexObj = knex({
     client: 'postgres',
-    connection: {
+    connections: [{
       database: 'dbname',
       host: 'localhost',
       password: 'password',
       user: 'user'
-    }
+    }]
   })
   t.deepEqual(knexObj.client.config, {
     client: 'postgres',
-    connection: {
+    connections: [{
       database: 'dbname',
       host: 'localhost',
       password: 'password',
       user: 'user'
-    }
+    }]
   })
   knexObj.destroy()
 })

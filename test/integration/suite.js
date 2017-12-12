@@ -30,13 +30,19 @@ module.exports = function(knex) {
 
     describe('knex.destroy', function() {
       it('should allow destroying the pool with knex.destroy', function() {
-        var spy = sinon.spy(knex.client.pool, 'clear');
+        var spies = knex.client.pools.map(function (pool) {
+          return sinon.spy(pool, 'clear');
+        });
         return knex.destroy().then(function() {
-          expect(spy).to.have.callCount(1);
-          expect(knex.client.pool).to.equal(undefined);
+          spies.forEach(function (spy) {
+            expect(spy).to.have.callCount(1);
+          });
+          expect(knex.client.pools).to.equal(undefined);
           return knex.destroy();
         }).then(function() {
-          expect(spy).to.have.callCount(1);
+          spies.forEach(function (spy) {
+            expect(spy).to.have.callCount(1);
+          });
         });
       });
     });
