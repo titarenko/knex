@@ -36,7 +36,7 @@ export default function Knex(config) {
   }
   if (config.connection) {
     config.connections = [config.connection]
-    config.connection = undefined
+    delete config.connection
   }
   if (typeof config.connections === 'string') {
     config.connections = config.connections.split(/\s/)

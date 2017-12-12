@@ -280,6 +280,7 @@ assign(Client.prototype, {
       const poolSettings = client.getPoolSettings(config.pool, connectionConfig);
       return genericPool.createPool(poolSettings.factory, poolSettings.config)
     })
+    this.lastPoolIndex = 0;
   },
 
   validateConnection(connection) {
